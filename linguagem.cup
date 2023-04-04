@@ -1,0 +1,182 @@
+import java_cup.runtime.*;
+
+action code {:
+	AnalisadorSemantico analyzer = new AnalisadorSemantico();
+:};
+
+parser code {:
+
+  public void syntax_error(java_cup.runtime.Symbol currToken) {
+    System.out.println("Erro de sintaxe na linha: "+(currToken.left+1)+" - Caracter: " + (currToken.right+1));
+  }
+
+:};
+/* Terminals (tokens returned by the scanner). */
+// SEMI = PONTO E VIRGULA;
+// COMMA = VÍRGULA
+// PLUS = MAIS;
+// MINUS = MENOS;
+// TIMES = MULTIPLICAR;
+// DIVIDE = DIVIDIR;
+// MOD = RESTO;
+// LPAREN = PARÊNTESES ESQUERDO;
+// RPAREN = PARÊNTESES DIREITO;
+// T_INT = IDENTIFICAÇÃO DE VARIÁVEL DO TIPO INT;
+// T_REAL = IDENTIFICAÇÃO DE VARIÁVEL DO TIPO REAL;
+// T_CARACTERE = IDENTIFICAÇÃO DE VARIÁVEL DO TIPO CARACTERE;
+// T_STRING = IDENTIFICAÇÃO DE VARIÁVEL DO TIPO STRING;
+// ID = IDENTIFICADOR DA VARIÁVEL (NOME);
+// ASSIGNMENT = SÍMBOLO DE ATRIBUIÇÃO;
+// ADDRESS_SYMBOL = &;
+
+// SÍMBOLOS
+terminal 						SEMI, COMMA, ADDRESS_SYMBOL;
+terminal           	PLUS, MINUS, TIMES, DIVIDE, MOD;
+terminal           	LPAREN, RPAREN;
+terminal 					 	T_INT, T_REAL, T_CARACTERE, T_STRING;
+terminal						ASSIGNMENT;
+terminal     				TRUE;
+terminal     				FALSE;
+terminal  Double   	NUMBER;
+terminal  String		STRING;
+terminal  String		CHAR;
+terminal 	String  	ID;
+
+// COMANDOS
+terminal						PRINTF;
+terminal 						SCANF;
+
+// BLOCOS
+terminal            START_BLOCK;
+terminal						END_BLOCK;
+
+// RELACIONAIS
+terminal 						EQUAL;
+terminal						B_THAN;
+terminal						L_THAN;
+terminal						B_EQUAL_THAN;
+terminal						L_EQUAL_THAN;
+terminal						DIF;
+
+// LÓGICOS
+terminal						NEGATIVE;
+terminal						AND;
+terminal						OR;
+
+// ESTRUTURAS
+terminal						IF;
+terminal						ELSE;
+terminal						FOR;
+terminal						WHILE;
+terminal						FUNCTION;
+
+/* Non terminals */
+non terminal      program, statements;
+non terminal      expressions, value, parameters, parameters_exec;
+non terminal  		decl_var, type, attr;
+non terminal  		commands, block;
+non terminal 			Double 	expr_art;
+non terminal      expr_rel, expr_log, expr_rel_operator, expr_log_operator, expr_if;
+
+/* Precedences */
+precedence left PLUS, MINUS;
+precedence left TIMES, DIVIDE, MOD;
+precedence left OR, AND, NEGATIVE;
+precedence left LPAREN;
+
+start with program;
+
+program ::= program statements | statements;
+
+statements ::= decl_var
+							| attr SEMI
+						  | expressions
+							| commands
+							;
+
+expressions ::= expr_art:e SEMI {: System.out.println("Expressão aritmética detectada!"); :}
+							| expr_rel
+							| expr_rel SEMI 
+							| expr_log
+							| expr_log SEMI
+							;
+
+expr_art ::= expr_art:e1 PLUS expr_art:e2 {: RESULT = e1 + e2; :} 
+	      | expr_art:e1 MINUS expr_art:e2 {: RESULT = e1 - e2; :} 
+	      | expr_art:e1 TIMES expr_art:e2 {: RESULT = e1 * e2; :} 
+	      | expr_art:e1 DIVIDE expr_art:e2 {: RESULT = e1 / e2; :} 
+	      | expr_art:e1 MOD expr_art:e2 {: RESULT = e1 % e2; :} 
+	      | NUMBER:n {: RESULT = n; :} 
+	      | MINUS expr_art:e {: RESULT = 0 - e; :} 
+	      | LPAREN expr_art:e RPAREN {: RESULT = e; :}
+				;
+
+type ::=  T_INT {: RESULT = "INTEIRO"; :} 
+				| T_REAL {: RESULT = "REAL"; :}
+				| T_CARACTERE {: RESULT = "CARACTERE"; :}
+				| T_STRING {: RESULT = "STRING"; :}
+				;
+
+decl_var ::= type:t ID:i SEMI {: System.out.println("Variavel "+i+" declarada do tipo "+t); analyzer.createVar(t, i); :};
+
+attr ::= ID:i ASSIGNMENT STRING:s {: analyzer.verifyAssignment(i, s); System.out.println("A variável "+i+" recebeu o valor "+s);  :}
+				| ID:i ASSIGNMENT expr_art:e {: analyzer.verifyAssignment(i, e); System.out.println("A variável "+i+" recebeu o valor "+e); :}
+				| ID:i ASSIGNMENT CHAR:c {: analyzer.verifyAssignment(i, c); System.out.println("A variável "+i+" recebeu o valor "+c); :}
+				| ID:i PLUS PLUS {: System.out.println("A variável "+i+" foi incrementada."); :}
+				| ID:i MINUS MINUS {: System.out.println("A variável "+i+" foi decrementada."); :}
+				;
+
+value ::=  expr_art:e {: RESULT = e; :} 
+					| ID:i {: analyzer.verifyExistsVar(i); RESULT =  new String("VARIAVEL "+i); :} 
+					| STRING:s {: RESULT = s; :} 
+					| CHAR:c {: RESULT = c; :}
+					| TRUE {: RESULT = "TRUE"; :} 
+					| FALSE {: RESULT = "FALSE"; :}
+						;
+
+expr_rel_operator ::= EQUAL {: RESULT = "IGUAL"; :} 
+										| DIF {: RESULT = "DIFERENTE"; :} 
+										| B_THAN {: RESULT = "MAIOR QUE"; :} 
+										| L_THAN {: RESULT = "MENOR QUE"; :} 
+										| B_EQUAL_THAN {: RESULT = "MAIOR OU IGUAL A"; :} 
+										| L_EQUAL_THAN {: RESULT = "MENOR OU IGUAL A"; :}
+										;
+
+expr_rel ::=  value:v1 expr_rel_operator:op value:v2 {: System.out.println("Expressão relacional detectada: "+v1+" "+op+" "+v2); :}
+						| LPAREN expr_rel RPAREN
+						;
+
+
+expr_log_operator ::= AND {: RESULT = "E"; :} | OR {: RESULT = "OU"; :};
+
+expr_log ::=  expr_rel expr_log_operator:op expr_rel {: System.out.println("Expressão lógica detectada: "+ op); :}
+						|	value expr_log_operator:op value {: System.out.println("Expressão lógica detectada: "+ op); :}
+						| NEGATIVE expr_log {: System.out.println("Expressão lógica detectada: NEGAÇÃO"); :}
+						| NEGATIVE expr_rel {: System.out.println("Expressão lógica detectada: NEGAÇÃO"); :}
+						| NEGATIVE value {: System.out.println("Expressão lógica detectada: NEGAÇÃO"); :}
+						| LPAREN expr_log RPAREN
+						;
+
+block ::= START_BLOCK program END_BLOCK;
+
+expr_if ::= expr_log | expr_rel;
+
+parameters ::= type:t ID:i COMMA parameters:p {: RESULT = "\n" + t + " " + i + p; :}
+							| type:t ID:i {: RESULT = "\n" + t + " " + i; :};
+
+parameters_exec ::= value:v COMMA parameters_exec: p {: RESULT = v + " , " + p; :} | value: v {: RESULT = v; :};
+
+commands ::= PRINTF LPAREN value:v RPAREN SEMI {: System.out.println("Comando PRINTF detectado: "+v); :}
+				| PRINTF LPAREN expressions RPAREN SEMI {: System.out.println("Comando PRINTF detectado: EXPRESSAO"); :}
+				| SCANF LPAREN STRING:s COMMA ADDRESS_SYMBOL ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+s+",&"+i+");"); :}
+				| SCANF LPAREN STRING:s COMMA ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+s+","+i+");"); :}
+				| SCANF LPAREN ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+i+");"); :}
+				| IF LPAREN expr_if RPAREN block {: System.out.println("COMANDO IF DETECTADO"); :}
+				| IF LPAREN expr_if RPAREN block ELSE block {: System.out.println("COMANDO IF COM ELSE DETECTADO"); :}
+				| FOR LPAREN attr SEMI expr_rel SEMI attr RPAREN block {: System.out.println("COMANDO FOR DETECTADO"); :}
+				| WHILE LPAREN expressions RPAREN block {: System.out.println("COMANDO WHILE DETECTADO"); :}
+				| FUNCTION ID:name LPAREN parameters:p RPAREN block {:  analyzer.createFunction(name, p); System.out.println("\nDECLARACAO DE FUNÇAO: " + name + " - PARAMETROS: " + p + "\n"); :}
+				| FUNCTION ID:name LPAREN RPAREN block {: analyzer.createFunction(name, ""); System.out.println("\nDECLARACAO DE FUNÇAO: " +  name); :}
+				| ID:name LPAREN parameters_exec:pe RPAREN SEMI {: analyzer.existsFunction(name); analyzer.verifyParameters(name, pe); System.out.println("\nEXECUCAO DE FUNÇAO: " +  name + " - PARÂMETROS: "+pe+"\n"); :}
+				| ID:name LPAREN RPAREN SEMI {: analyzer.existsFunction(name); analyzer.verifyParameters(name, ""); System.out.println("\nEXECUCAO DE FUNÇAO: " +  name); :}
+				;

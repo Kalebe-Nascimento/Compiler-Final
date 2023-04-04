@@ -1,0 +1,7 @@
+real b;
+
+function teste(int a, real name, char t){
+	printf(1+1);
+}
+
+teste(1, b, 'c');
