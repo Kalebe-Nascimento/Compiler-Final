@@ -39,7 +39,7 @@ public class AnalisadorSemantico {
   }
 
   public void verifyParameters(Object name, Object pexec) throws Exception{
-    String[] parametersExec = pexec.toString().split(",");
+    String[] parametersExec = pexec.toString().length() > 1 ? pexec.toString().split(",") : new String[0];
     ArrayList<String[]> parameters = functions.get(name);
 
     if(parameters.size() != parametersExec.length){
@@ -97,7 +97,7 @@ public class AnalisadorSemantico {
 
     String type = variables.get(id).toString();
 
-    if(type.equals("INTEIRO") && value.toString().contains(".")){
+    if(type.equals("INTEIRO") && (value.toString().contains(".") && !value.toString().contains(".0"))){
       throwError("Erro: Variavel '" + id + "' possui o tipo inteiro.");
     }
 

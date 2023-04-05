@@ -1,0 +1,18 @@
+
+; printf("2.0")
+section .data
+    format1680661382321 db "2.0",0
+    len1680661382321 equ $-format1680661382321
+section .text
+    global _start
+_start:
+    ; imprime a string 1680661382321
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, format1680661382321
+    mov edx, len1680661382321
+    int 0x80
+    ; sai do programa
+    mov eax, 1
+    xor ebx, ebx
+    int 0x80

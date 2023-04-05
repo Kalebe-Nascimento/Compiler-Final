@@ -1,0 +1,4 @@
+int b;
+b = 'a';
+
+printf(b);

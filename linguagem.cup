@@ -2,6 +2,7 @@ import java_cup.runtime.*;
 
 action code {:
 	AnalisadorSemantico analyzer = new AnalisadorSemantico();
+	GeradorCodigo gencode = new GeradorCodigo();
 :};
 
 parser code {:
@@ -166,10 +167,9 @@ parameters ::= type:t ID:i COMMA parameters:p {: RESULT = "\n" + t + " " + i + p
 
 parameters_exec ::= value:v COMMA parameters_exec: p {: RESULT = v + " , " + p; :} | value: v {: RESULT = v; :};
 
-commands ::= PRINTF LPAREN value:v RPAREN SEMI {: System.out.println("Comando PRINTF detectado: "+v); :}
-				| PRINTF LPAREN expressions RPAREN SEMI {: System.out.println("Comando PRINTF detectado: EXPRESSAO"); :}
-				| SCANF LPAREN STRING:s COMMA ADDRESS_SYMBOL ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+s+",&"+i+");"); :}
-				| SCANF LPAREN STRING:s COMMA ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+s+","+i+");"); :}
+commands ::= PRINTF LPAREN value:v RPAREN SEMI {: System.out.println("Comando PRINTF detectado: "+v); gencode.printf(v.toString()); :}
+				| SCANF LPAREN STRING:s COMMA ADDRESS_SYMBOL ID:i RPAREN SEMI {: analyzer.verifyExistsVar(i); gencode.scanf(s); System.out.println("COMANDO SCANF DETECTADO: scanf("+s+",&"+i+");"); :}
+				| SCANF LPAREN STRING:s COMMA ID:i RPAREN SEMI {: analyzer.verifyExistsVar(i); gencode.scanf(s); System.out.println("COMANDO SCANF DETECTADO: scanf("+s+","+i+");");  :}
 				| SCANF LPAREN ID:i RPAREN SEMI {: System.out.println("COMANDO SCANF DETECTADO: scanf("+i+");"); :}
 				| IF LPAREN expr_if RPAREN block {: System.out.println("COMANDO IF DETECTADO"); :}
 				| IF LPAREN expr_if RPAREN block ELSE block {: System.out.println("COMANDO IF COM ELSE DETECTADO"); :}
